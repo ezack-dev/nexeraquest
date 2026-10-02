@@ -110,26 +110,10 @@ export function queueDepths(): Record<string, number> {
  * the dev/test fallback so the app runs without Redis.
  */
 export async function enqueueDurable<T>(name: JobName, payload: T): Promise<void> {
-  const redisUrl = process.env.REDIS_URL;
-  if (!redisUrl) {
-    enqueue(name, payload);
-    return;
-  }
-  try {
-    // Dynamic require via eval so webpack doesn't try to bundle 'redis'
-    // (optional peer dep, only installed when REDIS_URL is used).
-    const req = eval('require') as NodeRequire;
-    const { createClient } = req('redis');
-    if (!createClient) {
-      enqueue(name, payload);
-      return;
-    }
-    const client = createClient({ url: redisUrl });
-    await client.connect();
-    await client.rPush(`nq:jobs:${name}`, JSON.stringify({ payload, enqueuedAt: Date.now() }));
-    await client.disconnect();
-  } catch (err: any) {
-    console.warn(`[queue] redis unavailable, falling back to memory: ${err.message}`);
-    enqueue(name, payload);
-  }
+  // Redis handoff is intentionally not bundled: install the `redis`
+  // package and set REDIS_URL, then replace this stub with a real client.
+  // Until then, everything runs on the in-memory queue — no silent fallback
+  // pretending to be durable.
+  enqueue(name, payload);
+  return;
 }
