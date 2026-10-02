@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       where: { campaignId: campaign.id, status: { in: ['IN_PROGRESS', 'SUBMISSION_REQUIRED'] } },
       select: { userId: true },
     });
-    const uniqueUsers = [...new Set(affected.map((t) => t.userId))];
+    const uniqueUsers = Array.from(new Set(affected.map((t) => t.userId)));
     if (uniqueUsers.length) {
       await NotificationDispatcher.broadcast(uniqueUsers, {
         templateKey: 'CAMPAIGN_CLOSED',

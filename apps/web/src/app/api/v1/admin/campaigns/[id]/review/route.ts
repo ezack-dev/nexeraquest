@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         where: { campaignId, status: { in: ['IN_PROGRESS', 'SUBMISSION_REQUIRED'] } },
         select: { userId: true },
       });
-      const uniqueUsers = [...new Set(affected.map((t) => t.userId))];
+      const uniqueUsers = Array.from(new Set(affected.map((t) => t.userId)));
       await NotificationDispatcher.broadcast(uniqueUsers, {
         templateKey: 'CAMPAIGN_PAUSED',
         title: `Campaign paused: ${campaign.title}`,
