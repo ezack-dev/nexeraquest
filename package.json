@@ -1,0 +1,30 @@
+{
+  "name": "nexeraquest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NexeraQuest — Telegram-Native Web3 Campaign Marketplace",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
+    "start": "npm run start --workspace=apps/web",
+    "db:generate": "npm run generate --workspace=packages/database",
+    "db:push": "npm run push --workspace=packages/database",
+    "db:seed": "npm run seed --workspace=packages/database",
+    "test": "vitest run",
+    "lint": "eslint . --ext .ts,.tsx",
+    "worker:reconciliation": "tsx workers/reconciliation-worker.ts",
+    "worker:fraud": "tsx workers/fraud-worker.ts",
+    "worker:settlement": "tsx workers/settlement-worker.ts",
+    "bot": "tsx apps/telegram-bot/src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3",
+    "tsx": "^4.19.2"
+  }
+}

@@ -1,0 +1,485 @@
+datasource db {
+  // Primary: Neon Postgres. Local dev also points at Neon (see .env).
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String          @id @default(uuid())
+  telegramId       String?         @unique
+  telegramUsername String?
+  firstName        String?
+  lastName         String?
+  email            String?         @unique
+  passwordHash     String?
+  role             String          @default("CONTRIBUTOR") // CONTRIBUTOR, PROJECT_OWNER, PROJECT_OPERATOR, ADMIN, FINANCE_ADMIN, RISK_ADMIN, SUPER_ADMIN
+  status           String          @default("ACTIVE") // ACTIVE, SUSPENDED, PENDING_VERIFICATION
+  trustScore       Int             @default(50)
+  avatarUrl        String?
+  referralCode     String?         @unique
+  referredById     String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  balanceAccounts  BalanceAccount[]
+  taskInstances    TaskInstance[]
+  trustEvents      TrustEvent[]
+  proofs           Proof[]
+  fraudCases       FraudCase[]
+  disputes         Dispute[]
+  withdrawals      Withdrawal[]
+  notifications    Notification[]
+  wallets          Wallet[]
+  projectMemberships ProjectMember[]
+  referredUsers    Referral[]      @relation("Referrer")
+  refereeProfile   Referral[]      @relation("Referee")
+}
+
+model Project {
+  id                 String          @id @default(uuid())
+  name               String
+  slug               String          @unique
+  logoUrl            String?
+  bannerUrl          String?
+  website            String?
+  twitterUrl         String?
+  telegramUrl        String?
+  description        String
+  verificationStatus String          @default("PENDING") // NOT_SUBMITTED, PENDING, VERIFIED, REJECTED, SUSPENDED
+  operatorEmail      String?
+  contactDetails     String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  members            ProjectMember[]
+  campaigns          Campaign[]
+  balanceAccounts    BalanceAccount[]
+  fundings           CampaignFunding[]
+  refunds            Refund[]
+  exportJobs         ExportJob[]
+}
+
+model ProjectMember {
+  id          String   @id @default(uuid())
+  projectId   String
+  userId      String
+  role        String   @default("OPERATOR") // OWNER, OPERATOR
+  permissions String   @default("ALL")
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model Campaign {
+  id                    String            @id @default(uuid())
+  projectId             String
+  title                 String
+  slug                  String            @unique
+  description           String
+  category              String            @default("Community") // Community, Social, Growth, Creative, Testing, Partnership
+  coverUrl              String?
+  status                String            @default("DRAFT") // DRAFT, FUNDING_REQUIRED, FUNDED, UNDER_REVIEW, APPROVED, SCHEDULED, LIVE, PAUSED, COMPLETED, EXPIRED, REJECTED, CANCELLED, SETTLED
+  rewardPerAction       Float             @default(0.0)
+  targetParticipants    Int               @default(100)
+  completedParticipants Int               @default(0)
+  totalBudget           Float             @default(0.0)
+  platformFee           Float             @default(0.0)
+  lockedBudget          Float             @default(0.0)
+  earnedBudget          Float             @default(0.0)
+  refundableBudget      Float             @default(0.0)
+  currency              String            @default("USDT")
+  verificationType      String            @default("TELEGRAM_JOIN")
+  verificationConfig    String?           // JSON encoded config
+  eligibilityConfig     String?           // JSON encoded config
+  startDate             DateTime?
+  endDate               DateTime?
+  pausedReason          String?
+  rejectionReason       String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  project               Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks                 CampaignTask[]
+  taskInstances         TaskInstance[]
+  fundings              CampaignFunding[]
+  settlement            CampaignSettlement?
+  refunds               Refund[]
+}
+
+model CampaignTask {
+  id                  String         @id @default(uuid())
+  campaignId          String
+  title               String
+  taskType            String         @default("TELEGRAM_JOIN") // TELEGRAM_JOIN, TELEGRAM_CHANNEL, CONTENT_REVIEW, SOCIAL_SHARE, PRODUCT_TEST, CUSTOM_TASK
+  actionType          String         @default("JOIN_COMMUNITY")
+  destinationUrl      String?
+  instructions        String
+  proofRequirements   String?
+  timerSeconds        Int?           @default(300)
+  orderIndex          Int            @default(0)
+  verificationAdapter String         @default("TELEGRAM_MEMBERSHIP")
+  adapterConfig       String?        // JSON encoded
+  createdAt           DateTime       @default(now())
+
+  campaign            Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  instances           TaskInstance[]
+}
+
+model TaskInstance {
+  id             String          @id @default(uuid())
+  campaignTaskId String
+  campaignId     String
+  userId         String
+  status         String          @default("AVAILABLE") // AVAILABLE, STARTING, IN_PROGRESS, SUBMISSION_REQUIRED, VERIFYING, APPROVED, REJECTED, EXPIRED, CANCELLED, DISPUTED
+  startedAt      DateTime        @default(now())
+  expiresAt      DateTime?
+  submittedAt    DateTime?
+  verifiedAt     DateTime?
+  completedAt    DateTime?
+  rewardClaimed  Boolean         @default(false)
+  metadata       String?         // JSON encoded
+
+  task           CampaignTask    @relation(fields: [campaignTaskId], references: [id], onDelete: Cascade)
+  campaign       Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proof          Proof?
+  attempts       VerificationAttempt[]
+  disputes       Dispute[]
+  fraudCases     FraudCase[]
+
+  @@unique([campaignTaskId, userId])
+}
+
+model Proof {
+  id             String       @id @default(uuid())
+  taskInstanceId String       @unique
+  userId         String
+  proofType      String       @default("URL") // URL, TEXT, IMAGE_UPLOAD, TELEGRAM_SESSION
+  content        String?
+  fileUrl        String?
+  fileSize       Int?
+  mimeType       String?
+  checksum       String?
+  submittedAt    DateTime     @default(now())
+
+  taskInstance   TaskInstance @relation(fields: [taskInstanceId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationAttempt {
+  id             String             @id @default(uuid())
+  taskInstanceId String
+  adapterName    String
+  status         String             @default("PENDING") // PENDING, VERIFIED, NOT_VERIFIED, UNAVAILABLE
+  resultData     String?            // JSON encoded
+  errorReason    String?
+  attemptNumber  Int                @default(1)
+  verifiedAt     DateTime           @default(now())
+
+  taskInstance   TaskInstance       @relation(fields: [taskInstanceId], references: [id], onDelete: Cascade)
+  results        VerificationResult[]
+}
+
+model VerificationResult {
+  id                    String              @id @default(uuid())
+  verificationAttemptId String
+  taskInstanceId        String
+  status                String              // VERIFIED, NOT_VERIFIED, UNAVAILABLE
+  confidence            Float               @default(1.0)
+  rawResponse           String?             // JSON encoded
+  verifiedAt            DateTime            @default(now())
+
+  attempt               VerificationAttempt @relation(fields: [verificationAttemptId], references: [id], onDelete: Cascade)
+}
+
+model BalanceAccount {
+  id               String        @id @default(uuid())
+  userId           String?
+  projectId        String?
+  accountType      String        @default("CONTRIBUTOR") // CONTRIBUTOR, PROJECT, PLATFORM_FEE, ESCROW
+  availableBalance Float         @default(0.0)
+  pendingBalance   Float         @default(0.0)
+  reservedBalance  Float         @default(0.0)
+  paidBalance      Float         @default(0.0)
+  currency         String        @default("USDT")
+
+  user             User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project          Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  outgoingEntries  LedgerEntry[] @relation("SourceAccount")
+  incomingEntries  LedgerEntry[] @relation("DestinationAccount")
+  withdrawals      Withdrawal[]
+
+  @@unique([userId, accountType, currency])
+  @@unique([projectId, accountType, currency])
+}
+
+model LedgerEntry {
+  id                   String          @id @default(uuid())
+  transactionId        String
+  sourceAccountId      String?
+  destinationAccountId String?
+  amount               Float
+  currency             String          @default("USDT")
+  entryType            String          // DEPOSIT, ESCROW_LOCK, REWARD_CREDIT, REWARD_REVERSAL, FEE_COLLECTION, WITHDRAWAL_REQUEST, WITHDRAWAL_PAYOUT, REFUND, ADJUSTMENT
+  campaignId           String?
+  taskInstanceId       String?
+  withdrawalId         String?
+  idempotencyKey       String?         @unique
+  referenceNote        String
+  createdAt            DateTime        @default(now())
+
+  sourceAccount        BalanceAccount? @relation("SourceAccount", fields: [sourceAccountId], references: [id])
+  destinationAccount   BalanceAccount? @relation("DestinationAccount", fields: [destinationAccountId], references: [id])
+
+  @@index([transactionId])
+  @@index([campaignId])
+  @@index([taskInstanceId])
+}
+
+model Withdrawal {
+  id                 String         @id @default(uuid())
+  userId             String
+  balanceAccountId   String
+  amount             Float
+  feeAmount          Float          @default(0.0)
+  netAmount          Float
+  currency           String         @default("USDT")
+  network            String         @default("TON")
+  destinationAddress String
+  status             String         @default("REQUESTED") // REQUESTED, RISK_CHECK, PENDING_AUTHORIZATION, APPROVED, PROCESSING, PAID, FAILED, REJECTED, MANUAL_REVIEW, CANCELLED
+  txHash             String?
+  failureReason      String?
+  idempotencyKey     String         @unique
+  requestedAt        DateTime       @default(now())
+  processedAt        DateTime?
+
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balanceAccount     BalanceAccount @relation(fields: [balanceAccountId], references: [id], onDelete: Cascade)
+  fraudCases         FraudCase[]
+}
+
+model TrustEvent {
+  id            String   @id @default(uuid())
+  userId        String
+  previousScore Int
+  newScore      Int
+  delta         Int
+  eventType     String   // TASK_APPROVED, TASK_REJECTED, FRAUD_CONFIRMED, DISPUTE_WON, DISPUTE_LOST, CONSECUTIVE_SUCCESS, ACCOUNT_AGE, MANUAL_ADJUSTMENT
+  reason        String
+  metadata      String?  // JSON encoded
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FraudCase {
+  id              String        @id @default(uuid())
+  userId          String
+  taskInstanceId  String?
+  withdrawalId    String?
+  riskScore       Int           @default(0)
+  severity        String        @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  status          String        @default("OPEN") // OPEN, INVESTIGATING, DISMISSED, CONFIRMED, RESOLVED
+  resolvedBy      String?
+  resolutionNotes String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskInstance    TaskInstance? @relation(fields: [taskInstanceId], references: [id])
+  withdrawal      Withdrawal?   @relation(fields: [withdrawalId], references: [id])
+  signals         FraudSignal[]
+}
+
+model FraudSignal {
+  id          String    @id @default(uuid())
+  fraudCaseId String?
+  userId      String
+  signalType  String    // TELEGRAM_AGE, VELOCITY_SPIKE, SYBIL_CLUSTER, PROOF_REUSE, REFERRAL_LOOP, TIMESTAMP_ANOMALY, REPEATED_FAILURES, SUSPICIOUS_WITHDRAWAL
+  weight      Int       @default(10)
+  details     String
+  detectedAt  DateTime  @default(now())
+
+  fraudCase   FraudCase? @relation(fields: [fraudCaseId], references: [id], onDelete: Cascade)
+}
+
+model Dispute {
+  id             String       @id @default(uuid())
+  taskInstanceId String
+  userId         String
+  projectId      String?
+  initiatedBy    String       @default("CONTRIBUTOR") // CONTRIBUTOR, PROJECT
+  reason         String
+  proofSummary   String?
+  status         String       @default("SUBMITTED") // SUBMITTED, UNDER_REVIEW, EVIDENCE_REQUESTED, UPHELD, OVERTURNED, PARTIAL_ADJUSTMENT, REJECTED
+  adminDecision  String?
+  adminNotes     String?
+  resolvedBy     String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  taskInstance   TaskInstance @relation(fields: [taskInstanceId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Referral {
+  id               String   @id @default(uuid())
+  referrerId       String
+  refereeId        String   @unique
+  referralCode     String
+  status           String   @default("ATTRIBUTED") // ATTRIBUTED, QUALIFIED, REWARDED, FRAUD_FLAGGED
+  qualifyingTaskId String?
+  rewardAmount     Float    @default(0.0)
+  createdAt        DateTime @default(now())
+
+  referrer         User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee          User     @relation("Referee", fields: [refereeId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  channel     String   @default("TELEGRAM") // TELEGRAM, IN_APP, EMAIL
+  templateKey String
+  title       String
+  messageBody String
+  deepLink    String?
+  status      String   @default("QUEUED") // QUEUED, SENT, FAILED, READ
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditEvent {
+  id            String   @id @default(uuid())
+  actorId       String
+  actorRole     String
+  action        String
+  entityType    String
+  entityId      String
+  previousState String?  // JSON
+  newState      String?  // JSON
+  ipAddress     String?
+  userAgent     String?
+  metadata      String?  // JSON
+  createdAt     DateTime @default(now())
+}
+
+model CampaignFunding {
+  id                String   @id @default(uuid())
+  campaignId        String
+  projectId         String
+  amount            Float
+  currency          String   @default("USDT")
+  feeAmount         Float
+  totalDeposit      Float
+  status            String   @default("CONFIRMED") // PENDING, CONFIRMED, FAILED
+  providerReference String?
+  createdAt         DateTime @default(now())
+
+  campaign          Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model CampaignSettlement {
+  id           String    @id @default(uuid())
+  campaignId   String    @unique
+  totalEarned  Float     @default(0.0)
+  totalRefunded Float    @default(0.0)
+  platformFees Float     @default(0.0)
+  status       String    @default("PENDING") // PENDING, SETTLED
+  settledAt    DateTime?
+
+  campaign     Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model Refund {
+  id         String   @id @default(uuid())
+  campaignId String
+  projectId  String
+  amount     Float
+  currency   String   @default("USDT")
+  reason     String
+  status     String   @default("REQUESTED") // REQUESTED, APPROVED, PROCESSED, REJECTED
+  approvedBy String?
+  createdAt  DateTime @default(now())
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Wallet {
+  id         String   @id @default(uuid())
+  userId     String
+  address    String
+  network    String   @default("TON")
+  isVerified Boolean  @default(false)
+  addedAt    DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, address, network])
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   // JSON string
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String
+  isEnabled   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model PricingRule {
+  id            String   @id @default(uuid())
+  name          String
+  feePercentage Float    @default(15.0)
+  minimumFee    Float    @default(25.0)
+  flatFee       Float    @default(0.0)
+  currency      String   @default("USDT")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ExportJob {
+  id           String    @id @default(uuid())
+  projectId    String
+  exportedBy   String
+  exportType   String    @default("PARTICIPANTS_CSV")
+  filterParams String?   // JSON
+  recordCount  Int       @default(0)
+  fileUrl      String?
+  status       String    @default("COMPLETED")
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ReconciliationRun {
+  id                 String    @id @default(uuid())
+  triggeredBy        String    @default("SYSTEM_WORKER")
+  status             String    @default("PASSED") // PASSED, DISCREPANCY_DETECTED, FAILED
+  totalChecked       Int       @default(0)
+  discrepanciesFound Int       @default(0)
+  discrepancyDetails String?   // JSON
+  summary            String
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+}
