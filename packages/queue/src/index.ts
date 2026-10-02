@@ -116,7 +116,10 @@ export async function enqueueDurable<T>(name: JobName, payload: T): Promise<void
     return;
   }
   try {
-    const { createClient } = await import('redis').catch(() => ({ createClient: null as any }));
+    // Dynamic require via eval so webpack doesn't try to bundle 'redis'
+    // (optional peer dep, only installed when REDIS_URL is used).
+    const req = eval('require') as NodeRequire;
+    const { createClient } = req('redis');
     if (!createClient) {
       enqueue(name, payload);
       return;
