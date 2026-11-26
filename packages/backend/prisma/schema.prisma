@@ -1,0 +1,169 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String          @id @default(uuid())
+  telegramId      String          @unique
+  username        String?
+  firstName       String?
+  lastName        String?
+  status          String          @default("ACTIVE") // ACTIVE, FROZEN, SUSPENDED
+  trustScore      Int             @default(50)
+  referralCode    String          @unique
+  referredById    String?
+  referredBy      User?           @relation("Referrals", fields: [referredById], references: [id])
+  referrals       User[]          @relation("Referrals")
+  balanceAccount  BalanceAccount?
+  taskInstances   TaskInstance[]
+  trustEvents     TrustEvent[]
+  withdrawals     Withdrawal[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Project {
+  id              String     @id @default(uuid())
+  name            String
+  description     String?
+  website         String?
+  telegramChannel String?
+  twitterHandle   String?
+  contactEmail    String?
+  status          String     @default("APPROVED") // PENDING, APPROVED, REJECTED
+  campaigns       Campaign[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Campaign {
+  id              String         @id @default(uuid())
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id])
+  title           String
+  description     String
+  category        String         // COMMUNITY, SOCIAL, GROWTH, CREATIVE, TESTING
+  taskType        String         // TELEGRAM_JOIN, TWITTER_FOLLOW, REFERRAL, CONTENT_SUBMIT, FEEDBACK
+  instructions    String
+  externalUrl     String?        // e.g. https://t.me/nexeraquest_announcements
+  rewardPerAction Float
+  targetSlots     Int
+  completedSlots  Int            @default(0)
+  rewardPool      Float
+  platformFee     Float
+  totalCost       Float
+  proofType       String         // AUTOMATIC_MEMBERSHIP, LINK_SUBMISSION, SCREENSHOT_UPLOAD, TEXT_RESPONSE
+  status          String         @default("ACTIVE") // DRAFT, PENDING_REVIEW, ACTIVE, PAUSED, COMPLETED, CLOSED
+  rejectionReason String?
+  taskInstances   TaskInstance[]
+  ledgerEntries   LedgerEntry[]
+  startsAt        DateTime?
+  endsAt          DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model TaskInstance {
+  id          String    @id @default(uuid())
+  campaignId  String
+  campaign    Campaign  @relation(fields: [campaignId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  status      String    @default("STARTED") // STARTED, SUBMITTED, APPROVED, REJECTED, ABANDONED
+  proof       Proof?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+}
+
+model Proof {
+  id              String       @id @default(uuid())
+  taskInstanceId  String       @unique
+  taskInstance    TaskInstance @relation(fields: [taskInstanceId], references: [id])
+  proofType       String
+  payload         String       // JSON or string payload (URL, text, screenshot ref)
+  status          String       @default("PENDING") // PENDING, VERIFIED, REJECTED
+  rejectionReason String?
+  verifiedAt      DateTime?
+  createdAt       DateTime     @default(now())
+}
+
+model BalanceAccount {
+  id            String        @id @default(uuid())
+  userId        String        @unique
+  user          User          @relation(fields: [userId], references: [id])
+  available     Float         @default(0.0)
+  pending       Float         @default(0.0)
+  withdrawn     Float         @default(0.0)
+  ledgerEntries LedgerEntry[]
+  updatedAt     DateTime      @updatedAt
+}
+
+model LedgerEntry {
+  id          String          @id @default(uuid())
+  accountId   String?
+  account     BalanceAccount? @relation(fields: [accountId], references: [id])
+  campaignId  String?
+  campaign    Campaign?       @relation(fields: [campaignId], references: [id])
+  type        String          // CAMPAIGN_DEPOSIT, PLATFORM_FEE, REWARD_EARNED, REWARD_REVERSED, WITHDRAWAL_REQUESTED, WITHDRAWAL_SETTLED, CAMPAIGN_REFUND
+  direction   String          // CREDIT, DEBIT
+  amount      Float
+  currency    String          @default("USDT")
+  referenceId String?         // task_instance_id or withdrawal_id
+  description String?
+  timestamp   DateTime        @default(now())
+}
+
+model Withdrawal {
+  id                 String    @id @default(uuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id])
+  amount             Float
+  currency           String    @default("USDT")
+  network            String    @default("TON") // TON, ARBITRUM, POLYGON
+  destinationAddress String
+  status             String    @default("REQUESTED") // REQUESTED, PROCESSING, COMPLETED, REJECTED
+  txHash             String?
+  rejectionReason    String?
+  authorizedBy       String?
+  createdAt          DateTime  @default(now())
+  settledAt          DateTime?
+}
+
+model TrustEvent {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  eventType    String   // QUEST_APPROVED, PROOF_REJECTED, FRAUD_FLAG, REFERRAL_BONUS
+  delta        Int
+  currentScore Int
+  reason       String
+  createdAt    DateTime @default(now())
+}
+
+model FraudCase {
+  id          String   @id @default(uuid())
+  subjectType String   // USER, CAMPAIGN, TASK_INSTANCE
+  subjectId   String
+  severity    String   // LOW, MEDIUM, HIGH, CRITICAL
+  signals     String   // JSON array of strings
+  status      String   @default("OPEN") // OPEN, INVESTIGATING, RESOLVED_CLEARED, RESOLVED_BANNED
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  actorId    String
+  actorRole  String   // USER, PROJECT_ADMIN, SUPER_ADMIN, SYSTEM
+  action     String
+  targetType String
+  targetId   String
+  details    String?  // JSON string
+  createdAt  DateTime @default(now())
+}

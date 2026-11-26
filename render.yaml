@@ -1,0 +1,31 @@
+databases:
+  - name: nexeraquest-db
+    databaseName: nexeraquest
+    user: nexeraquest
+    plan: free
+
+services:
+  - type: web
+    name: nexeraquest
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build:render
+    startCommand: npm run start:render
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexeraquest-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ENABLE_DEMO_AUTH
+        value: "true"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
+        sync: false
+      - key: WEB_APP_URL
+        sync: false

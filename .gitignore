@@ -1,31 +1,8 @@
-# dependencies
 node_modules/
-.pnp
-.pnp.js
-
-# next.js
-.next/
-out/
-*.log
-
-# env & secrets — NEVER commit
+dist/
 .env
-.env*.local
+.env.local
 *.db
 *.db-journal
-
-# uploads (user proof files)
-uploads/
-
-# builds
-dist/
-build/
-
-# vercel
-.vercel
-
-# OS / editor
+*.log
 .DS_Store
-Thumbs.db
-*.pem
-*.key
