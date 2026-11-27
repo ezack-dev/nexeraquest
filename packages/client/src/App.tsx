@@ -10,7 +10,7 @@ export const App: React.FC = () => {
 
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-[#09090B] text-zinc-100 flex flex-col font-sans">
+      <div className="min-h-screen bg-[#0A0B0E] text-zinc-100 flex flex-col font-sans">
         <Navbar currentSurface={surface} setSurface={setSurface} />
         <main className="flex-1">
           {surface === 'miniapp' && <MiniAppView />}

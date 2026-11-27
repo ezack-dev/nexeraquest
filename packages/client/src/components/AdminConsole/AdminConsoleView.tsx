@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../api.js';
 import { AuditSummary, FraudCase, Campaign } from '../../types.js';
 import {
-  Lock,
+  ShieldAlert,
   ShieldCheck,
   CheckCircle2,
   XCircle,
@@ -92,7 +92,7 @@ export const AdminConsoleView: React.FC = () => {
   const handleFraudResolve = async (id: string, action: 'CLEARED' | 'BANNED') => {
     try {
       await api.resolveFraudCase(id, action);
-      setBanner({ type: 'success', text: `Fraud case resolved as ${action}.` });
+      setBanner({ type: 'success', text: `Case resolved as ${action.toLowerCase()}.` });
       await loadData();
     } catch (err: any) {
       setBanner({ type: 'error', text: err.message });
@@ -112,24 +112,19 @@ export const AdminConsoleView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 bg-[#111216] border border-zinc-800/90 rounded-2xl">
-        <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-          <div className="w-11 h-11 rounded-xl bg-[#171920] text-[#2AABEE] border border-zinc-800 flex items-center justify-center shrink-0">
-            <Lock className="w-5 h-5" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 bg-[#13151B] border border-white/[0.08] rounded-2xl">
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="w-11 h-11 rounded-xl bg-white/[0.05] text-zinc-200 border border-white/[0.08] flex items-center justify-center shrink-0">
+            <ShieldAlert className="w-5 h-5 text-[#3390EC]" />
           </div>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-bold text-zinc-100 tracking-[-0.02em]">
-                Operations Console
-              </h1>
-              <span className="px-2 py-0.5 rounded-md bg-[#2AABEE]/10 text-[#2AABEE] border border-[#2AABEE]/25 text-[10px] font-mono font-medium">
-                Platform Admin
-              </span>
-            </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Escrow reconciliation, fraud review, manual proof approvals, and batch payout authorization.
+            <h1 className="text-lg sm:text-xl font-semibold text-white tracking-[-0.02em]">
+              Operations Console
+            </h1>
+            <p className="text-[13px] text-zinc-400 mt-0.5">
+              Review submissions, authorize payouts, and monitor escrow solvency.
             </p>
           </div>
         </div>
@@ -137,23 +132,23 @@ export const AdminConsoleView: React.FC = () => {
         <button
           type="button"
           onClick={loadData}
-          className="px-3.5 py-2.5 bg-[#171920] hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-semibold transition inline-flex items-center justify-center gap-1.5 self-start sm:self-auto min-h-[40px]"
+          className="px-3.5 py-2.5 bg-[#191C24] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 rounded-xl text-xs font-medium transition inline-flex items-center justify-center gap-1.5 self-start sm:self-auto min-h-[40px]"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Queues</span>
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* Inline Feedback Banner */}
       {banner && (
         <div
-          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs ${
+          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 text-[13px] ${
             banner.type === 'success'
-              ? 'bg-emerald-950/30 border-emerald-800/60 text-emerald-300'
-              : 'bg-rose-950/30 border-rose-800/60 text-rose-300'
+              ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
+              : 'bg-rose-500/10 border-rose-500/25 text-rose-300'
           }`}
         >
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2 min-w-0">
             {banner.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             ) : (
@@ -164,76 +159,76 @@ export const AdminConsoleView: React.FC = () => {
           <button
             type="button"
             onClick={() => setBanner(null)}
-            className="text-zinc-400 hover:text-zinc-100 font-semibold shrink-0"
+            className="text-xs text-zinc-400 hover:text-white font-medium shrink-0"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* Solvency & Operations KPIs */}
+      {/* Operations KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 bg-[#111216] border border-zinc-800/90 rounded-2xl">
-          <span className="text-[11px] text-zinc-400 block">Ledger Solvency Invariant</span>
+        <div className="p-4 bg-[#13151B] border border-white/[0.07] rounded-2xl">
+          <span className="text-xs text-zinc-400 block">Escrow Status</span>
           <div className="mt-1.5 flex items-center gap-1.5">
             <ShieldCheck
               className={`w-4 h-4 shrink-0 ${audit?.isBalanced ? 'text-emerald-400' : 'text-rose-400'}`}
             />
             <span
-              className={`text-xs sm:text-sm font-bold font-mono ${
+              className={`text-sm font-semibold ${
                 audit?.isBalanced ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
-              {audit?.isBalanced ? 'ZERO-SUM BALANCED' : 'RECONCILIATION ERROR'}
+              {audit?.isBalanced ? 'Balanced' : 'Mismatch'}
             </span>
           </div>
-          <p className="text-[10px] text-zinc-500 mt-1 font-mono tabular-nums">
-            {audit?.totalEntriesCount ?? 0} immutable entries
+          <p className="text-[11px] text-zinc-500 mt-1 font-mono tabular-nums">
+            {audit?.totalEntriesCount ?? 0} ledger records
           </p>
         </div>
 
-        <div className="p-4 bg-[#111216] border border-zinc-800/90 rounded-2xl">
-          <span className="text-[11px] text-zinc-400 block">Pending Proofs</span>
+        <div className="p-4 bg-[#13151B] border border-white/[0.07] rounded-2xl">
+          <span className="text-xs text-zinc-400 block">Proof Reviews</span>
           <p className="text-xl sm:text-2xl font-bold text-amber-400 font-mono tabular-nums mt-1">
             {proofs.length}
           </p>
-          <p className="text-[10px] text-zinc-500 mt-1">Manual review queue</p>
+          <p className="text-[11px] text-zinc-500 mt-1">Awaiting decision</p>
         </div>
 
-        <div className="p-4 bg-[#111216] border border-zinc-800/90 rounded-2xl">
-          <span className="text-[11px] text-zinc-400 block">Pending Cashouts</span>
-          <p className="text-xl sm:text-2xl font-bold text-[#2AABEE] font-mono tabular-nums mt-1">
+        <div className="p-4 bg-[#13151B] border border-white/[0.07] rounded-2xl">
+          <span className="text-xs text-zinc-400 block">Pending Payouts</span>
+          <p className="text-xl sm:text-2xl font-bold text-[#3390EC] font-mono tabular-nums mt-1">
             {withdrawals.length}
           </p>
-          <p className="text-[10px] text-zinc-500 mt-1">Awaiting batch authorization</p>
+          <p className="text-[11px] text-zinc-500 mt-1">Ready for release</p>
         </div>
 
-        <div className="p-4 bg-[#111216] border border-zinc-800/90 rounded-2xl">
-          <span className="text-[11px] text-zinc-400 block">Open Fraud Cases</span>
+        <div className="p-4 bg-[#13151B] border border-white/[0.07] rounded-2xl">
+          <span className="text-xs text-zinc-400 block">Risk Flags</span>
           <p className="text-xl sm:text-2xl font-bold text-rose-400 font-mono tabular-nums mt-1">
             {fraudCases.filter((f) => f.status === 'OPEN').length}
           </p>
-          <p className="text-[10px] text-zinc-500 mt-1">Sybil & velocity flags</p>
+          <p className="text-[11px] text-zinc-500 mt-1">Open investigations</p>
         </div>
       </div>
 
-      {/* Wrapped Queue Navigation (Zero horizontal overflow) */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-zinc-800/90 pb-3">
+      {/* Queue Tabs */}
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-white/[0.07] pb-3">
         {[
           { id: 'proofs', label: `Proof Reviews (${proofs.length})` },
-          { id: 'withdrawals', label: `Withdrawal Batches (${withdrawals.length})` },
-          { id: 'fraud', label: `Fraud & Trust Queue (${fraudCases.length})` },
-          { id: 'campaigns', label: `Pending Campaigns (${pendingCampaigns.length})` },
-          { id: 'audit', label: 'Financial Ledger Audit' },
+          { id: 'withdrawals', label: `Payouts (${withdrawals.length})` },
+          { id: 'fraud', label: `Risk Queue (${fraudCases.length})` },
+          { id: 'campaigns', label: `Campaigns (${pendingCampaigns.length})` },
+          { id: 'audit', label: 'Balance Sheet' },
         ].map((t) => (
           <button
             type="button"
             key={t.id}
             onClick={() => setActiveTab(t.id as any)}
-            className={`py-2 px-3 rounded-xl text-xs font-semibold transition border ${
+            className={`py-2 px-3 rounded-xl text-xs font-medium transition border ${
               activeTab === t.id
-                ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
-                : 'bg-[#111216] text-zinc-400 border-zinc-800/90 hover:text-zinc-200'
+                ? 'bg-white text-zinc-950 border-white font-semibold'
+                : 'bg-[#13151B] text-zinc-400 border-white/[0.07] hover:text-zinc-200'
             }`}
           >
             {t.label}
@@ -241,41 +236,39 @@ export const AdminConsoleView: React.FC = () => {
         ))}
       </div>
 
-      {/* Tab Panels */}
-      <div className="bg-[#111216] border border-zinc-800/90 rounded-2xl p-4 sm:p-6">
-        {/* 1. PROOF REVIEW QUEUE */}
+      {/* Active Queue Panel */}
+      <div className="bg-[#13151B] border border-white/[0.07] rounded-2xl p-4 sm:p-6">
         {activeTab === 'proofs' && (
           <div className="space-y-4">
-            <h2 className="text-sm font-bold text-zinc-100">Manual Proof Verification Queue</h2>
+            <h2 className="text-sm font-semibold text-white">Submitted Proofs</h2>
 
             {proofs.length === 0 ? (
-              <div className="py-12 text-center text-xs text-zinc-500">
-                No pending proofs in review queue.
+              <div className="py-12 text-center text-[13px] text-zinc-500">
+                No pending proofs to review.
               </div>
             ) : (
               <div className="space-y-3">
                 {proofs.map((p) => (
                   <div
                     key={p.id}
-                    className="p-4 bg-[#0B0C0F] border border-zinc-800/90 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className="p-4 bg-[#0E1015] border border-white/[0.07] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
                   >
                     <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-zinc-100 break-words">
+                        <span className="text-sm font-semibold text-white break-words">
                           {p.taskInstance?.campaign?.title}
                         </span>
-                        <span className="text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 tabular-nums">
+                        <span className="text-xs font-mono text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 tabular-nums">
                           +{p.taskInstance?.campaign?.rewardPerAction?.toFixed(2)} USDT
                         </span>
                       </div>
                       <p className="text-xs text-zinc-400">
-                        Contributor:{' '}
                         <span className="text-zinc-200 font-mono">@{p.taskInstance?.user?.username}</span>{' '}
-                        <span className="font-mono text-[11px] tabular-nums">
-                          (Trust: {p.taskInstance?.user?.trustScore}/100)
+                        <span className="font-mono tabular-nums text-zinc-500">
+                          · Trust {p.taskInstance?.user?.trustScore}/100
                         </span>
                       </p>
-                      <div className="p-3 bg-[#111216] rounded-xl border border-zinc-800 text-xs font-mono text-zinc-300 break-words">
+                      <div className="p-3 bg-[#13151B] rounded-xl border border-white/[0.07] text-xs font-mono text-zinc-300 break-words">
                         {p.payload}
                       </div>
                     </div>
@@ -284,10 +277,10 @@ export const AdminConsoleView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleProofDecision(p.id, 'APPROVE')}
-                        className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center gap-1.5 min-h-[40px]"
+                        className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition inline-flex items-center justify-center gap-1.5 min-h-[40px]"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Approve & Settle</span>
+                        <span>Approve & Credit</span>
                       </button>
                       <button
                         type="button"
@@ -298,7 +291,7 @@ export const AdminConsoleView: React.FC = () => {
                             title: p.taskInstance?.campaign?.title || 'Proof Submission',
                           })
                         }
-                        className="py-2 px-3.5 bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/60 rounded-xl text-xs font-bold transition inline-flex items-center justify-center gap-1.5 min-h-[40px]"
+                        className="py-2 px-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 rounded-xl text-xs font-semibold transition inline-flex items-center justify-center gap-1.5 min-h-[40px]"
                       >
                         <XCircle className="w-4 h-4" />
                         <span>Reject</span>
@@ -311,13 +304,12 @@ export const AdminConsoleView: React.FC = () => {
           </div>
         )}
 
-        {/* 2. WITHDRAWAL AUTHORIZATION QUEUE */}
         {activeTab === 'withdrawals' && (
           <div className="space-y-4">
-            <h2 className="text-sm font-bold text-zinc-100">Pending Crypto Withdrawal Batches</h2>
+            <h2 className="text-sm font-semibold text-white">Withdrawal Requests</h2>
 
             {withdrawals.length === 0 ? (
-              <div className="py-12 text-center text-xs text-zinc-500">
+              <div className="py-12 text-center text-[13px] text-zinc-500">
                 No pending withdrawal requests.
               </div>
             ) : (
@@ -325,22 +317,22 @@ export const AdminConsoleView: React.FC = () => {
                 {withdrawals.map((w) => (
                   <div
                     key={w.id}
-                    className="p-4 bg-[#0B0C0F] border border-zinc-800/90 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className="p-4 bg-[#0E1015] border border-white/[0.07] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
                   >
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-base font-bold text-emerald-400 font-mono tabular-nums">
                           ${w.amount.toFixed(2)} {w.currency}
                         </span>
-                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-900 text-zinc-300 border border-zinc-800">
+                        <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-white/[0.05] text-zinc-300 border border-white/[0.08]">
                           {w.network}
                         </span>
                       </div>
                       <p className="text-xs text-zinc-400 font-mono break-all">
-                        Destination: <span className="text-zinc-200 select-all">{w.destinationAddress}</span>
+                        To: <span className="text-zinc-200 select-all">{w.destinationAddress}</span>
                       </p>
                       <p className="text-[11px] text-zinc-500 font-mono tabular-nums">
-                        User: @{w.user?.username} · Trust Score: {w.user?.trustScore}/100
+                        @{w.user?.username} · Trust {w.user?.trustScore}/100
                       </p>
                     </div>
 
@@ -348,10 +340,10 @@ export const AdminConsoleView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleAuthorizeWithdrawal(w.id)}
-                        className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center gap-1.5 min-h-[40px]"
+                        className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition inline-flex items-center justify-center gap-1.5 min-h-[40px]"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Authorize On-Chain Payout</span>
+                        <span>Approve Payout</span>
                       </button>
                       <button
                         type="button"
@@ -359,13 +351,13 @@ export const AdminConsoleView: React.FC = () => {
                           setRejectPrompt({
                             kind: 'withdrawal',
                             id: w.id,
-                            title: `$${w.amount.toFixed(2)} ${w.currency} Withdrawal`,
+                            title: `$${w.amount.toFixed(2)} ${w.currency} Payout`,
                           })
                         }
-                        className="py-2 px-3.5 bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/60 rounded-xl text-xs font-bold transition inline-flex items-center justify-center gap-1.5 min-h-[40px]"
+                        className="py-2 px-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 rounded-xl text-xs font-semibold transition inline-flex items-center justify-center gap-1.5 min-h-[40px]"
                       >
                         <XCircle className="w-4 h-4" />
-                        <span>Reject & Refund</span>
+                        <span>Reject & Return</span>
                       </button>
                     </div>
                   </div>
@@ -375,33 +367,32 @@ export const AdminConsoleView: React.FC = () => {
           </div>
         )}
 
-        {/* 3. FRAUD & TRUST QUEUE */}
         {activeTab === 'fraud' && (
           <div className="space-y-4">
-            <h2 className="text-sm font-bold text-zinc-100">Fraud Heuristics & Trust Incidents</h2>
+            <h2 className="text-sm font-semibold text-white">Risk & Integrity Cases</h2>
 
             {fraudCases.length === 0 ? (
-              <div className="py-12 text-center text-xs text-zinc-500">
-                Clean audit. No fraud incidents detected.
+              <div className="py-12 text-center text-[13px] text-zinc-500">
+                No risk cases flagged.
               </div>
             ) : (
               <div className="space-y-3">
                 {fraudCases.map((f) => (
                   <div
                     key={f.id}
-                    className="p-4 bg-[#0B0C0F] border border-zinc-800/90 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className="p-4 bg-[#0E1015] border border-white/[0.07] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-rose-400 font-mono">
-                          [{f.severity}] Incident {f.id.slice(0, 8)}
+                        <span className="text-xs font-semibold text-rose-400 font-mono">
+                          {f.severity} · Case {f.id.slice(0, 8)}
                         </span>
-                        <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-zinc-900 text-zinc-300 border border-zinc-800 font-mono">
+                        <span className="text-[11px] px-2 py-0.5 rounded bg-white/[0.05] text-zinc-300 border border-white/[0.08] font-mono">
                           {f.status}
                         </span>
                       </div>
                       <p className="text-xs text-zinc-300 mt-1 font-mono break-all">Signals: {f.signals}</p>
-                      <p className="text-[11px] text-zinc-500 mt-0.5 break-words">{f.notes}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5 break-words">{f.notes}</p>
                     </div>
 
                     {f.status === 'OPEN' && (
@@ -409,16 +400,16 @@ export const AdminConsoleView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleFraudResolve(f.id, 'BANNED')}
-                          className="py-2 px-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold min-h-[38px]"
+                          className="py-2 px-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold min-h-[38px]"
                         >
-                          Ban User
+                          Suspend User
                         </button>
                         <button
                           type="button"
                           onClick={() => handleFraudResolve(f.id, 'CLEARED')}
-                          className="py-2 px-3 bg-[#171920] hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-bold min-h-[38px]"
+                          className="py-2 px-3 bg-[#191C24] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 rounded-xl text-xs font-semibold min-h-[38px]"
                         >
-                          Dismiss & Clear
+                          Clear Flag
                         </button>
                       </div>
                     )}
@@ -429,28 +420,27 @@ export const AdminConsoleView: React.FC = () => {
           </div>
         )}
 
-        {/* 4. PENDING CAMPAIGNS */}
         {activeTab === 'campaigns' && (
           <div className="space-y-4">
-            <h2 className="text-sm font-bold text-zinc-100">Pending Project Campaign Reviews</h2>
+            <h2 className="text-sm font-semibold text-white">Campaign Approval Queue</h2>
 
             {pendingCampaigns.length === 0 ? (
-              <div className="py-12 text-center text-xs text-zinc-500">
-                No campaigns awaiting review.
+              <div className="py-12 text-center text-[13px] text-zinc-500">
+                No campaigns awaiting approval.
               </div>
             ) : (
               <div className="space-y-3">
                 {pendingCampaigns.map((c) => (
                   <div
                     key={c.id}
-                    className="p-4 bg-[#0B0C0F] border border-zinc-800/90 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className="p-4 bg-[#0E1015] border border-white/[0.07] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
                   >
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-bold text-zinc-100 break-words">{c.title}</h4>
+                      <h4 className="text-sm font-semibold text-white break-words">{c.title}</h4>
                       <p className="text-xs text-zinc-400 mt-0.5 break-words">{c.instructions}</p>
-                      <p className="text-[11px] text-zinc-500 font-mono tabular-nums mt-1">
-                        Reward: ${c.rewardPerAction.toFixed(2)} · Slots: {c.targetSlots} · Escrow: $
-                        {c.rewardPool.toFixed(2)} USDT
+                      <p className="text-xs text-zinc-500 font-mono tabular-nums mt-1">
+                        ${c.rewardPerAction.toFixed(2)}/action · {c.targetSlots} spots · $
+                        {c.rewardPool.toFixed(2)} USDT pool
                       </p>
                     </div>
 
@@ -458,14 +448,14 @@ export const AdminConsoleView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleCampaignReview(c.id, 'APPROVE')}
-                        className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold min-h-[38px]"
+                        className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold min-h-[38px]"
                       >
-                        Approve Campaign
+                        Approve
                       </button>
                       <button
                         type="button"
                         onClick={() => handleCampaignReview(c.id, 'REJECT')}
-                        className="py-2 px-3.5 bg-rose-950/40 text-rose-300 border border-rose-800/60 rounded-xl text-xs font-bold min-h-[38px]"
+                        className="py-2 px-3.5 bg-rose-500/10 text-rose-300 border border-rose-500/25 rounded-xl text-xs font-semibold min-h-[38px]"
                       >
                         Reject
                       </button>
@@ -477,74 +467,73 @@ export const AdminConsoleView: React.FC = () => {
           </div>
         )}
 
-        {/* 5. FINANCIAL LEDGER AUDIT */}
         {activeTab === 'audit' && audit && (
           <div className="space-y-5">
-            <div className="p-4 bg-[#0B0C0F] rounded-xl border border-zinc-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 bg-[#0E1015] rounded-xl border border-white/[0.07] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-zinc-100">Full Double-Entry Balance Sheet</h3>
+                <h3 className="text-sm font-semibold text-white">Platform Balance Sheet</h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Reconciliation of pre-funded escrows, earned contributor balances, fees, and settled payouts.
+                  Reconciles campaign deposits against earned rewards, platform fees, and payouts.
                 </p>
               </div>
               <div
-                className={`px-3 py-1.5 rounded-lg border font-mono text-xs font-semibold inline-flex items-center gap-1.5 self-start sm:self-auto shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg border font-mono text-xs font-medium inline-flex items-center gap-1.5 self-start sm:self-auto shrink-0 ${
                   audit.isBalanced
                     ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
                     : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
                 }`}
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{audit.isBalanced ? 'Zero-Sum Invariant OK' : 'Audit Mismatch'}</span>
+                <span>{audit.isBalanced ? 'Balanced' : 'Audit Mismatch'}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono tabular-nums">
-              <div className="p-3.5 bg-[#0B0C0F] rounded-xl border border-zinc-800/90">
-                <span className="text-zinc-500 block text-[10px]">TOTAL ESCROW DEPOSITS</span>
-                <span className="text-sm sm:text-base font-bold text-zinc-100 mt-1 block">
+              <div className="p-3.5 bg-[#0E1015] rounded-xl border border-white/[0.07]">
+                <span className="text-zinc-500 block text-[11px] font-sans">Escrow Deposits</span>
+                <span className="text-sm sm:text-base font-bold text-white mt-1 block">
                   ${audit.totalDeposits.toFixed(2)} USDT
                 </span>
               </div>
-              <div className="p-3.5 bg-[#0B0C0F] rounded-xl border border-zinc-800/90">
-                <span className="text-zinc-500 block text-[10px]">PLATFORM REVENUE (20%)</span>
-                <span className="text-sm sm:text-base font-bold text-[#2AABEE] mt-1 block">
+              <div className="p-3.5 bg-[#0E1015] rounded-xl border border-white/[0.07]">
+                <span className="text-zinc-500 block text-[11px] font-sans">Platform Fees (20%)</span>
+                <span className="text-sm sm:text-base font-bold text-[#3390EC] mt-1 block">
                   ${audit.totalPlatformFees.toFixed(2)} USDT
                 </span>
               </div>
-              <div className="p-3.5 bg-[#0B0C0F] rounded-xl border border-zinc-800/90">
-                <span className="text-zinc-500 block text-[10px]">EARNED REWARDS</span>
+              <div className="p-3.5 bg-[#0E1015] rounded-xl border border-white/[0.07]">
+                <span className="text-zinc-500 block text-[11px] font-sans">Contributor Earnings</span>
                 <span className="text-sm sm:text-base font-bold text-emerald-400 mt-1 block">
                   ${audit.totalRewardsEarned.toFixed(2)} USDT
                 </span>
               </div>
-              <div className="p-3.5 bg-[#0B0C0F] rounded-xl border border-zinc-800/90">
-                <span className="text-zinc-500 block text-[10px]">SETTLED PAYOUTS</span>
+              <div className="p-3.5 bg-[#0E1015] rounded-xl border border-white/[0.07]">
+                <span className="text-zinc-500 block text-[11px] font-sans">Settled Payouts</span>
                 <span className="text-sm sm:text-base font-bold text-amber-400 mt-1 block">
                   ${audit.totalWithdrawalsSettled.toFixed(2)} USDT
                 </span>
               </div>
             </div>
 
-            <div className="p-4 bg-[#0B0C0F] rounded-xl border border-zinc-800/90 text-xs text-zinc-400 space-y-2 font-mono tabular-nums">
+            <div className="p-4 bg-[#0E1015] rounded-xl border border-white/[0.07] text-xs text-zinc-400 space-y-2 font-mono tabular-nums">
               <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5">
-                <span>Active Campaign Remaining Escrow Liability:</span>
+                <span>Remaining Campaign Escrow:</span>
                 <span className="text-zinc-100 font-semibold">${audit.totalCampaignEscrowLiability.toFixed(2)} USDT</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5">
-                <span>Contributor Liquid Available Balance:</span>
+                <span>Contributor Available Balances:</span>
                 <span className="text-zinc-100 font-semibold">${audit.totalAvailableLiability.toFixed(2)} USDT</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5">
-                <span>Contributor Pending Withdrawal Liability:</span>
+                <span>Contributor Pending Withdrawals:</span>
                 <span className="text-zinc-100 font-semibold">${audit.totalPendingLiability.toFixed(2)} USDT</span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 border-t border-zinc-800 pt-2 font-bold text-emerald-400">
-                <span>Solvency Formula Status:</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 border-t border-white/[0.07] pt-2 font-semibold text-emerald-400">
+                <span>Reconciliation Status:</span>
                 <span>
                   {audit.isBalanced
-                    ? 'DEPOSITS == ESCROW + REWARDS + REFUNDS (Verified)'
-                    : 'RECONCILIATION CHECK FAILED'}
+                    ? 'Deposits = Remaining Escrow + Earned + Refunds'
+                    : 'Reconciliation Failed'}
                 </span>
               </div>
             </div>
@@ -552,17 +541,25 @@ export const AdminConsoleView: React.FC = () => {
         )}
       </div>
 
-      {/* Inline Rejection Reason Modal (replaces browser prompt) */}
+      {/* Reject Reason Dialog */}
       {rejectPrompt && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setRejectPrompt(null);
+              setRejectReason('');
+            }
+          }}
+        >
           <form
             onSubmit={submitRejectPrompt}
-            className="w-full max-w-md bg-[#111216] border-t sm:border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 space-y-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            className="w-full max-w-md bg-[#13151B] border-t sm:border border-white/[0.1] rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 space-y-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
           >
-            <h3 className="text-base font-bold text-zinc-100">Reject {rejectPrompt.title}</h3>
+            <h3 className="text-base font-semibold text-white">Reject {rejectPrompt.title}</h3>
             <div>
               <label htmlFor="admin-reject-reason" className="block text-xs font-medium text-zinc-400 mb-1.5">
-                Rejection Reason
+                Reason
               </label>
               <textarea
                 id="admin-reject-reason"
@@ -571,8 +568,8 @@ export const AdminConsoleView: React.FC = () => {
                 rows={3}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Explain why this submission or payout was rejected..."
-                className="w-full bg-[#0B0C0F] border border-zinc-800 rounded-xl p-3 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-[#2AABEE]"
+                placeholder="Provide a clear reason for rejection..."
+                className="w-full bg-[#0E1015] border border-white/[0.08] rounded-xl p-3 text-[13px] text-white placeholder-zinc-600 focus:outline-none focus:border-[#3390EC]"
               />
             </div>
             <div className="flex items-center gap-2.5">
@@ -582,15 +579,15 @@ export const AdminConsoleView: React.FC = () => {
                   setRejectPrompt(null);
                   setRejectReason('');
                 }}
-                className="flex-1 py-2.5 bg-[#171920] hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-semibold min-h-[42px]"
+                className="flex-1 py-2.5 bg-[#191C24] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 rounded-xl text-xs font-medium min-h-[42px]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold min-h-[42px]"
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold min-h-[42px]"
               >
-                Confirm Rejection
+                Confirm Reject
               </button>
             </div>
           </form>

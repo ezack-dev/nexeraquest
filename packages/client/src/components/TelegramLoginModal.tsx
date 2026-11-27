@@ -23,14 +23,13 @@ export const TelegramLoginModal: React.FC<TelegramLoginModalProps> = ({ onClose 
     const botUsername = authConfig.botUsername;
     if (!botUsername || !widgetContainerRef.current) return;
 
-    // Register global callback for Telegram Login Widget
     (window as any).onNexeraTelegramAuth = async (tgUser: any) => {
       try {
         setError(null);
         await loginWithTelegramWidget(tgUser);
         onClose();
       } catch (err: any) {
-        setError(err.message || 'Telegram login failed');
+        setError(err.message || 'Telegram sign-in failed');
       }
     };
 
@@ -61,28 +60,28 @@ export const TelegramLoginModal: React.FC<TelegramLoginModalProps> = ({ onClose 
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-md bg-[#111216] border-t sm:border border-zinc-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <div className="flex items-center justify-between border-b border-zinc-800/90 pb-3">
+      <div className="relative w-full max-w-md bg-[#13151B] border-t sm:border border-white/[0.1] rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-between border-b border-white/[0.07] pb-3">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[#2AABEE]" />
-            <h3 className="text-sm sm:text-base font-bold text-zinc-100">Sign in with Telegram</h3>
+            <ShieldCheck className="w-4 h-4 text-[#3390EC]" />
+            <h3 className="text-base font-semibold text-white">Sign in with Telegram</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close Telegram sign-in modal"
-            className="p-1.5 text-zinc-400 hover:text-zinc-100 rounded-lg hover:bg-zinc-900"
+            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/[0.06]"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          Connect your real Telegram account using Telegram&apos;s cryptographic authentication. No passwords, email, or wallet seed phrases required.
+        <p className="text-[13px] text-zinc-400 leading-relaxed">
+          Verify your Telegram account to save quest progress, build your Trust Score, and withdraw rewards directly.
         </p>
 
         {error && (
-          <div className="p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-center gap-2 text-xs text-rose-300">
+          <div className="p-3 bg-rose-500/10 border border-rose-500/25 rounded-xl flex items-center gap-2 text-[13px] text-rose-300">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{error}</span>
           </div>
@@ -92,30 +91,23 @@ export const TelegramLoginModal: React.FC<TelegramLoginModalProps> = ({ onClose 
           <div className="space-y-3">
             <div
               ref={widgetContainerRef}
-              className="min-h-[48px] flex items-center justify-center p-4 bg-[#0B0C0F] border border-zinc-800 rounded-xl"
+              className="min-h-[48px] flex items-center justify-center p-4 bg-[#0E1015] border border-white/[0.07] rounded-xl"
             />
-            <p className="text-[11px] text-zinc-500 text-center">
-              Requires this domain to be registered via <span className="font-mono text-zinc-300">/setdomain</span> in{' '}
-              <span className="font-mono text-zinc-300">@BotFather</span> for <span className="font-mono text-[#2AABEE]">@{authConfig.botUsername}</span>.
-            </p>
             <a
               href={`https://t.me/${authConfig.botUsername}`}
               target="_blank"
               rel="noreferrer"
-              className="w-full py-2.5 px-4 bg-[#171920] hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 px-4 bg-[#191C24] hover:bg-white/[0.09] border border-white/[0.09] text-zinc-200 rounded-xl text-[13px] font-medium flex items-center justify-center gap-1.5"
             >
-              <span>Open @{authConfig.botUsername} inside Telegram</span>
+              <span>Open @{authConfig.botUsername} in Telegram</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
         ) : (
-          <div className="p-4 bg-[#0B0C0F] border border-zinc-800 rounded-xl space-y-2 text-xs">
-            <p className="font-semibold text-zinc-200">Bot Token Not Configured Yet</p>
+          <div className="p-4 bg-[#0E1015] border border-white/[0.07] rounded-xl space-y-1.5 text-[13px]">
+            <p className="font-semibold text-zinc-200">Telegram Bot Not Connected</p>
             <p className="text-zinc-400 leading-relaxed">
-              This instance is currently running in Hybrid Demo mode because a live <span className="font-mono text-zinc-300">TELEGRAM_BOT_TOKEN</span> has not been set yet.
-            </p>
-            <p className="text-[11px] text-zinc-500">
-              Once deployed to Render with your <span className="font-mono text-zinc-300">@BotFather</span> token, the live Telegram Sign-In widget renders automatically here.
+              This local preview is using sandbox accounts. Set <span className="font-mono text-zinc-300">TELEGRAM_BOT_TOKEN</span> on your host to enable real Telegram sign-in.
             </p>
           </div>
         )}
