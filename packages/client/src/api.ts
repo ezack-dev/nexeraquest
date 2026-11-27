@@ -139,4 +139,31 @@ export const api = {
     }),
 
   getLedgerAudit: () => request<any>('/admin/ledger/audit'),
+
+  // Health & Monitor
+  getHealth: async (): Promise<{
+    ok: boolean;
+    statusCode: number;
+    latencyMs: number;
+    data: any;
+  }> => {
+    const started = performance.now();
+    try {
+      const response = await fetch(`${API_BASE}/health`, {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      const latencyMs = Math.max(1, Math.round(performance.now() - started));
+      const data = await response.json().catch(() => ({}));
+      return { ok: response.ok, statusCode: response.status, latencyMs, data };
+    } catch (err: any) {
+      const latencyMs = Math.max(1, Math.round(performance.now() - started));
+      return {
+        ok: false,
+        statusCode: 0,
+        latencyMs,
+        data: { status: 'unhealthy', database: 'disconnected', error: err?.message || 'Network error' },
+      };
+    }
+  },
 };

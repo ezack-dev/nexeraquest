@@ -539,6 +539,20 @@ async function runTestPlan() {
         `EscrowBalanced=${finalAudit.data.escrowBalanced}, WalletBalanced=${finalAudit.data.walletBalanced}\n`
     );
 
+    // Health check endpoint checks (GET & HEAD across /health, /healthz, /api/health)
+    for (const path of ['/health', '/healthz', '/api/health']) {
+      const getHealth = await fetch(`${baseUrl}${path}`);
+      assert.equal(getHealth.status, 200);
+      assert.match(getHealth.headers.get('cache-control') || '', /no-store/);
+      const healthBody = await getHealth.json();
+      assert.equal(healthBody.status, 'ok');
+      assert.equal(healthBody.database, 'connected');
+
+      const headHealth = await fetch(`${baseUrl}${path}`, { method: 'HEAD' });
+      assert.equal(headHealth.status, 200);
+    }
+    console.log('✅ HEALTH-01: GET & HEAD /health, /healthz, /api/health (no-store, db connected) verified.');
+
     console.log('🎉 ALL MASTER TEST PLAN API & INVARIANT SUITES PASSED 100%!\n');
   } finally {
     server.close();

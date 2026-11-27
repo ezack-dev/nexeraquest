@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api.js';
 import { AuditSummary, FraudCase, Campaign } from '../../types.js';
+import { MonitorView } from '../MonitorView.js';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -11,7 +12,9 @@ import {
 } from 'lucide-react';
 
 export const AdminConsoleView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'proofs' | 'withdrawals' | 'fraud' | 'campaigns' | 'audit'>('proofs');
+  const [activeTab, setActiveTab] = useState<
+    'proofs' | 'withdrawals' | 'fraud' | 'campaigns' | 'audit' | 'monitor'
+  >('proofs');
   const [proofs, setProofs] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [fraudCases, setFraudCases] = useState<FraudCase[]>([]);
@@ -220,6 +223,7 @@ export const AdminConsoleView: React.FC = () => {
           { id: 'fraud', label: `Risk Queue (${fraudCases.length})` },
           { id: 'campaigns', label: `Campaigns (${pendingCampaigns.length})` },
           { id: 'audit', label: 'Balance Sheet' },
+          { id: 'monitor', label: 'Monitor' },
         ].map((t) => (
           <button
             type="button"
@@ -539,6 +543,8 @@ export const AdminConsoleView: React.FC = () => {
             </div>
           </div>
         )}
+
+        {activeTab === 'monitor' && <MonitorView embedded />}
       </div>
 
       {/* Reject Reason Dialog */}

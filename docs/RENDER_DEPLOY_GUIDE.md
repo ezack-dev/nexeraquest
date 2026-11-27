@@ -84,5 +84,10 @@ Now tell Telegram where your hosted Mini App and Login Widget live:
    - Click the top-right account menu -> **Sign in with Telegram** -> approve the Telegram login prompt -> verify your real Telegram session persists across reloads!
    - Or stay in **Hybrid Demo** mode to toggle between `@alex_web3`, `Project Portal`, and `Admin Ops` quickly.
 
-> **Important Note About Render Free Tier:**
+> **Important Note About Render Free Tier & Uptime Monitoring:**
 > Render's free web services sleep after ~15 minutes of inactivity and take ~30–50 seconds to wake up on the next request. Your PostgreSQL database data remains intact while the web service sleeps (note Render's free PostgreSQL tier expires after 30 days unless upgraded to Starter).
+>
+> To monitor uptime or reduce cold starts:
+> - **Health Check URIs:** `https://<your-service>.onrender.com/health` (and `/api/health` or `/healthz`) respond to both `GET` and `HEAD` with database latency telemetry (`Cache-Control: no-store`).
+> - **Built-in Monitor Page:** Open `/monitor` (or **Admin Ops -> Monitor**) to inspect live status, copy the Health Check URI, and auto-ping every 5 minutes while the page stays open.
+> - **24/7 Keep-Alive (Optional):** Paste your `/health` URI into an external uptime monitor (such as UptimeRobot, Better Stack, or cron-job.org) with a 5-minute interval so pings continue even when your browser is closed.

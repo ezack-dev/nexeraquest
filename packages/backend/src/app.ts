@@ -8,6 +8,7 @@ import { taskRouter } from './routes/taskRoutes.js';
 import { userRouter } from './routes/userRoutes.js';
 import { adminRouter } from './routes/adminRoutes.js';
 import { prisma } from './prisma.js';
+import { TelegramBotService } from './services/telegramBot.js';
 
 function resolveClientDistPath(): string | null {
   const candidates = [
@@ -57,15 +58,46 @@ export function createApp() {
     next();
   });
 
-  // Health check
-  app.get('/health', async (_req, res) => {
+  // Health checks (supports GET & HEAD for Render and external uptime monitors)
+  const handleHealthCheck = async (req: express.Request, res: express.Response) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    const startedAt = Date.now();
     try {
       await prisma.$queryRaw`SELECT 1`;
-      res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date() });
+      const dbLatencyMs = Date.now() - startedAt;
+      if (req.method === 'HEAD') {
+        res.status(200).end();
+        return;
+      }
+      res.json({
+        status: 'ok',
+        service: 'nexeraquest',
+        database: 'connected',
+        dbLatencyMs,
+        uptimeSeconds: Math.floor(process.uptime()),
+        uptime: process.uptime(),
+        telegramBot: TelegramBotService.isLive() ? 'live' : 'mock',
+        timestamp: new Date().toISOString(),
+      });
     } catch (err: any) {
-      res.status(500).json({ status: 'unhealthy', error: err.message });
+      if (req.method === 'HEAD') {
+        res.status(503).end();
+        return;
+      }
+      res.status(503).json({
+        status: 'unhealthy',
+        service: 'nexeraquest',
+        database: 'disconnected',
+        error: err.message,
+        timestamp: new Date().toISOString(),
+      });
     }
-  });
+  };
+
+  for (const healthPath of ['/health', '/healthz', '/api/health']) {
+    app.get(healthPath, handleHealthCheck);
+    app.head(healthPath, handleHealthCheck);
+  }
 
   // Mount API routes
   app.use('/api/auth', authRouter);
@@ -79,7 +111,7 @@ export function createApp() {
   if (clientDist && process.env.NODE_ENV !== 'test') {
     app.use(express.static(clientDist));
     app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api') || req.path === '/health') {
+      if (req.path.startsWith('/api') || req.path === '/health' || req.path === '/healthz') {
         return next();
       }
       res.sendFile(path.join(clientDist, 'index.html'));
