@@ -72,27 +72,56 @@ async function runTestPlan() {
       username: 'hmac_user',
       first_name: 'Hmac',
       last_name: 'Verified',
+      photo_url: 'https://t.me/i/userpic/320/hmac_user.jpg',
     });
 
     const authOk = await apiCall(baseUrl, '/api/auth/telegram', 'POST', { initData: validInitData });
     assert.equal(authOk.status, 200);
     assert.equal(authOk.data.user.username, 'hmac_user');
+    assert.equal(authOk.data.user.photoUrl, 'https://t.me/i/userpic/320/hmac_user.jpg');
     assert.equal(authOk.data.user.trustScore, 50);
+
+    // Re-login with updated Telegram display name & avatar URL (same username)
+    const updatedInitData = buildTelegramInitData(testBotToken, {
+      id: 444555666,
+      username: 'hmac_user',
+      first_name: 'HmacUpdated',
+      last_name: '',
+      photo_url: 'https://t.me/i/userpic/320/hmac_user_v2.jpg',
+    });
+    const authUpdated = await apiCall(baseUrl, '/api/auth/telegram', 'POST', { initData: updatedInitData });
+    assert.equal(authUpdated.status, 200);
+    assert.equal(authUpdated.data.user.firstName, 'HmacUpdated');
+    assert.equal(authUpdated.data.user.lastName, '');
+    assert.equal(authUpdated.data.user.photoUrl, 'https://t.me/i/userpic/320/hmac_user_v2.jpg');
+
+    // Reject unsafe non-HTTPS photo_url scheme cleanly
+    const unsafePhotoInitData = buildTelegramInitData(testBotToken, {
+      id: 444555666,
+      username: 'hmac_user',
+      first_name: 'HmacUpdated',
+      last_name: '',
+      photo_url: 'http://insecure.example/avatar.png',
+    });
+    const authUnsafePhoto = await apiCall(baseUrl, '/api/auth/telegram', 'POST', { initData: unsafePhotoInitData });
+    assert.equal(authUnsafePhoto.status, 200);
+    assert.equal(authUnsafePhoto.data.user.photoUrl, null);
 
     const tamperedInitData = validInitData.replace('hmac_user', 'hacker_user');
     const authFail = await apiCall(baseUrl, '/api/auth/telegram', 'POST', { initData: tamperedInitData });
     assert.equal(authFail.status, 401);
-    console.log('✅ AUTH-01: Telegram initData HMAC-SHA256 valid + tampered signature (401) verified.');
+    console.log('✅ AUTH-01: Telegram initData HMAC-SHA256, photo_url sync, and tampered signature (401) verified.');
 
     // AUTH-03: Browser Telegram Login Widget HMAC + Session Token Restore + /api/auth/config
     const widgetPayload: Record<string, any> = {
       id: 777888999,
       first_name: 'Widget',
       last_name: 'User',
+      photo_url: 'https://t.me/i/userpic/320/widget_tg.jpg',
       username: 'widget_tg',
       auth_date: Math.floor(Date.now() / 1000),
     };
-    const wCheckStr = ['auth_date', 'first_name', 'id', 'last_name', 'username']
+    const wCheckStr = ['auth_date', 'first_name', 'id', 'last_name', 'photo_url', 'username']
       .map((k) => `${k}=${widgetPayload[k]}`)
       .join('\n');
     const wSecret = crypto.createHash('sha256').update(testBotToken).digest();
@@ -101,6 +130,7 @@ async function runTestPlan() {
     const widgetOk = await apiCall(baseUrl, '/api/auth/telegram-widget', 'POST', { widgetData: widgetPayload });
     assert.equal(widgetOk.status, 200);
     assert.equal(widgetOk.data.user.username, 'widget_tg');
+    assert.equal(widgetOk.data.user.photoUrl, 'https://t.me/i/userpic/320/widget_tg.jpg');
     assert.equal(widgetOk.data.authMode, 'telegram_widget');
     assert.ok(widgetOk.data.sessionToken);
 
@@ -114,6 +144,11 @@ async function runTestPlan() {
     });
     assert.equal(sessRestore.status, 200);
     assert.equal(sessRestore.data.user.username, 'widget_tg');
+    assert.equal(sessRestore.data.user.photoUrl, 'https://t.me/i/userpic/320/widget_tg.jpg');
+
+    const profileCheck = await apiCall(baseUrl, `/api/user/profile/${widgetOk.data.user.id}`);
+    assert.equal(profileCheck.status, 200);
+    assert.equal(profileCheck.data.user.photoUrl, 'https://t.me/i/userpic/320/widget_tg.jpg');
 
     const sessBad = await apiCall(baseUrl, '/api/auth/session', 'POST', { sessionToken: 'bad.token' });
     assert.equal(sessBad.status, 401);

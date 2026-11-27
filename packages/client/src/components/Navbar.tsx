@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import { TelegramLoginModal } from './TelegramLoginModal.js';
+import { UserAvatar } from './UserAvatar.js';
 import { Shield, User, Building2, ShieldAlert, Wallet, ChevronDown, Check, LogIn, LogOut } from 'lucide-react';
 
 interface NavbarProps {
@@ -118,10 +119,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentSurface, setSurface }) =>
                   onClick={() => setMenuOpen((prev) => !prev)}
                   aria-expanded={menuOpen}
                   aria-haspopup="menu"
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#13151B] hover:bg-[#191C24] border border-white/[0.08] rounded-lg text-xs text-zinc-200 transition min-h-[34px]"
+                  className="flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 bg-[#13151B] hover:bg-[#191C24] border border-white/[0.08] rounded-lg text-xs text-zinc-200 transition min-h-[34px]"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  <span className="font-medium max-w-[74px] sm:max-w-[120px] truncate">
+                  <UserAvatar
+                    user={user}
+                    sizeClass="w-5 h-5"
+                    roundedClass="rounded-full"
+                    textClass="text-[9px]"
+                  />
+                  <span className="font-medium max-w-[68px] sm:max-w-[120px] truncate">
                     @{user?.username || 'Guest'}
                   </span>
                   <ChevronDown
@@ -134,10 +140,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentSurface, setSurface }) =>
                     role="menu"
                     className="absolute right-0 mt-2 w-64 bg-[#13151B] border border-white/[0.1] rounded-xl shadow-2xl p-1.5 z-50"
                   >
-                    <div className="px-2.5 py-1.5 flex items-center justify-between text-[11px] text-zinc-400">
-                      <span>{authMode === 'demo' ? 'Preview Account' : 'Telegram Account'}</span>
+                    <div className="px-2.5 py-2 mb-1 flex items-center gap-2.5 bg-[#0E1015] border border-white/[0.06] rounded-lg">
+                      <UserAvatar
+                        user={user}
+                        sizeClass="w-8 h-8"
+                        roundedClass="rounded-lg"
+                        textClass="text-xs"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-white truncate">
+                          {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'Contributor'}
+                        </p>
+                        <p className="text-[11px] text-zinc-400 font-mono truncate">
+                          @{user?.username || 'guest'}
+                        </p>
+                      </div>
                       <span
-                        className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${
+                        className={`font-mono text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
                           authMode === 'demo'
                             ? 'bg-white/[0.05] text-zinc-400'
                             : 'bg-[#3390EC]/15 text-[#3390EC]'

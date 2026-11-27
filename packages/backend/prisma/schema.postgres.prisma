@@ -13,6 +13,7 @@ model User {
   username        String?
   firstName       String?
   lastName        String?
+  photoUrl        String?
   status          String          @default("ACTIVE") // ACTIVE, FROZEN, SUSPENDED
   trustScore      Int             @default(50)
   referralCode    String          @unique

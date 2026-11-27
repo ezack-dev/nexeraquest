@@ -4,6 +4,7 @@ export interface User {
   username?: string;
   firstName?: string;
   lastName?: string;
+  photoUrl?: string | null;
   trustScore: number;
   status: 'ACTIVE' | 'FROZEN' | 'SUSPENDED';
   referralCode: string;

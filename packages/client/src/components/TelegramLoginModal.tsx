@@ -42,6 +42,7 @@ export const TelegramLoginModal: React.FC<TelegramLoginModalProps> = ({ onClose 
     script.setAttribute('data-telegram-login', botUsername);
     script.setAttribute('data-size', 'large');
     script.setAttribute('data-radius', '12');
+    script.setAttribute('data-userpic', 'true');
     script.setAttribute('data-onauth', 'onNexeraTelegramAuth(user)');
     script.setAttribute('data-request-access', 'write');
 

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { api } from '../../api.js';
+import { UserAvatar } from '../UserAvatar.js';
 import { Shield, Award, Users, Copy, Check, TrendingUp } from 'lucide-react';
 
 export const ProfileTab: React.FC = () => {
-  const { user } = useAuth();
+  const { user, authMode } = useAuth();
   const [profileData, setProfileData] = useState<any>(null);
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -29,7 +30,12 @@ export const ProfileTab: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const trustScore = user?.trustScore ?? 50;
+  const displayUser = profileData?.user || user;
+  const fullName =
+    [displayUser?.firstName, displayUser?.lastName].filter(Boolean).join(' ') ||
+    displayUser?.username ||
+    'Contributor';
+  const trustScore = displayUser?.trustScore ?? 50;
   const trustTier =
     trustScore >= 80 ? 'Elite Contributor' : trustScore >= 65 ? 'Verified Pioneer' : 'Member';
 
@@ -41,16 +47,36 @@ export const ProfileTab: React.FC = () => {
     <div className="space-y-4">
       {/* Identity & Reputation Card */}
       <div className="p-5 bg-[#13151B] border border-white/[0.08] rounded-2xl space-y-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-[#191C24] border border-white/[0.1] flex items-center justify-center text-base font-semibold text-white shrink-0">
-            {user?.firstName?.charAt(0) || user?.username?.charAt(0) || 'U'}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <UserAvatar
+              user={displayUser}
+              sizeClass="w-12 h-12"
+              roundedClass="rounded-xl"
+              textClass="text-base"
+            />
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-white tracking-[-0.02em] truncate">
+                {fullName}
+              </h2>
+              <p className="text-xs text-zinc-400 font-mono truncate">
+                @{displayUser?.username || 'user'}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-white tracking-[-0.02em] truncate">
-              {user?.firstName} {user?.lastName}
-            </h2>
-            <p className="text-xs text-zinc-400 font-mono truncate">@{user?.username || 'user'}</p>
-          </div>
+          <span
+            className={`text-[11px] font-medium px-2 py-0.5 rounded-md border shrink-0 ${
+              authMode === 'demo'
+                ? 'bg-white/[0.04] border-white/[0.08] text-zinc-400'
+                : 'bg-[#3390EC]/10 border-[#3390EC]/25 text-[#3390EC]'
+            }`}
+          >
+            {authMode === 'telegram_miniapp'
+              ? 'Mini App'
+              : authMode === 'telegram_widget'
+              ? 'Telegram'
+              : 'Sandbox'}
+          </span>
         </div>
 
         {/* Trust Score Summary */}

@@ -66,6 +66,7 @@ userRouter.get('/profile/:id', async (req: Request, res: Response): Promise<void
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        photoUrl: user.photoUrl ?? null,
         trustScore: user.trustScore,
         status: user.status,
         referralCode: user.referralCode,

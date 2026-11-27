@@ -115,11 +115,26 @@ function verifyTelegramLoginWidget(payload: Record<string, any>, botToken: strin
   }
 }
 
+function sanitizePhotoUrl(raw?: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'https:' ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function upsertTelegramUser(params: {
   telegramId: string;
   username?: string;
   firstName?: string;
   lastName?: string;
+  photoUrl?: string | null;
+  isRealTelegram?: boolean;
+  clearMissingPhoto?: boolean;
   referralCode?: string;
 }) {
   let user = await prisma.user.findUnique({
@@ -143,7 +158,8 @@ async function upsertTelegramUser(params: {
         telegramId: params.telegramId,
         username: params.username || `tg_${params.telegramId}`,
         firstName: params.firstName || 'Telegram',
-        lastName: params.lastName || '',
+        lastName: params.lastName ?? '',
+        photoUrl: params.photoUrl ?? null,
         referralCode: genRefCode,
         referredById,
         balanceAccount: {
@@ -156,17 +172,44 @@ async function upsertTelegramUser(params: {
       },
       include: { balanceAccount: true },
     });
-  } else if (params.username && user.username !== params.username) {
-    // Keep handle updated if real user changed it on Telegram
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        username: params.username,
-        firstName: params.firstName ?? user.firstName,
-        lastName: params.lastName ?? user.lastName,
-      },
-      include: { balanceAccount: true },
-    });
+  } else {
+    const nextUsername = params.username || (params.isRealTelegram ? `tg_${params.telegramId}` : user.username);
+    const nextFirstName = params.firstName || user.firstName || 'Telegram';
+    const nextLastName =
+      params.lastName !== undefined
+        ? params.lastName
+        : (user.lastName ?? '');
+    const nextPhotoUrl =
+      params.photoUrl !== undefined
+        ? params.photoUrl
+        : params.clearMissingPhoto
+        ? null
+        : (user.photoUrl ?? null);
+
+    const hasChanges = params.isRealTelegram
+      ? nextUsername !== user.username ||
+        nextFirstName !== user.firstName ||
+        nextLastName !== user.lastName ||
+        nextPhotoUrl !== user.photoUrl
+      : Boolean(
+          (params.username && nextUsername !== user.username) ||
+            (params.firstName && nextFirstName !== user.firstName) ||
+            (params.lastName !== undefined && nextLastName !== user.lastName) ||
+            (params.photoUrl !== undefined && nextPhotoUrl !== user.photoUrl)
+        );
+
+    if (hasChanges) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          username: nextUsername,
+          firstName: nextFirstName,
+          lastName: nextLastName,
+          photoUrl: nextPhotoUrl,
+        },
+        include: { balanceAccount: true },
+      });
+    }
   }
 
   return user;
@@ -179,6 +222,7 @@ function formatUserResponse(user: any) {
     username: user.username,
     firstName: user.firstName,
     lastName: user.lastName,
+    photoUrl: user.photoUrl ?? null,
     trustScore: user.trustScore,
     status: user.status,
     referralCode: user.referralCode,
@@ -211,7 +255,9 @@ authRouter.post('/telegram', async (req: Request, res: Response): Promise<void> 
     let telegramId = '';
     let username = 'guest';
     let firstName = 'Web3';
-    let lastName = 'Contributor';
+    let lastName: string | undefined = undefined;
+    let photoUrl: string | null | undefined = undefined;
+    let isRealTelegram = false;
     let authMode: 'telegram_miniapp' | 'demo' = 'demo';
 
     if (initData) {
@@ -229,6 +275,8 @@ authRouter.post('/telegram', async (req: Request, res: Response): Promise<void> 
         username = parsed.username || `tg_${telegramId}`;
         firstName = parsed.first_name || '';
         lastName = parsed.last_name || '';
+        photoUrl = parsed.photo_url !== undefined ? sanitizePhotoUrl(parsed.photo_url) : undefined;
+        isRealTelegram = true;
         authMode = 'telegram_miniapp';
       }
     } else if (demoEnabled) {
@@ -236,7 +284,8 @@ authRouter.post('/telegram', async (req: Request, res: Response): Promise<void> 
         telegramId = mockUser.telegramId || `demo_${Date.now()}`;
         username = mockUser.username || `demouser_${telegramId.slice(-4)}`;
         firstName = mockUser.firstName || 'Demo';
-        lastName = mockUser.lastName || 'Tester';
+        lastName = mockUser.lastName !== undefined ? mockUser.lastName : undefined;
+        photoUrl = mockUser.photoUrl !== undefined ? sanitizePhotoUrl(mockUser.photoUrl) : undefined;
       } else {
         telegramId = 'demo_user_101';
         username = 'alex_web3';
@@ -258,6 +307,8 @@ authRouter.post('/telegram', async (req: Request, res: Response): Promise<void> 
       username,
       firstName,
       lastName,
+      photoUrl,
+      isRealTelegram,
       referralCode,
     });
 
@@ -296,6 +347,9 @@ authRouter.post('/telegram-widget', async (req: Request, res: Response): Promise
       username: widgetData.username || `tg_${telegramId}`,
       firstName: widgetData.first_name || 'Telegram',
       lastName: widgetData.last_name || '',
+      photoUrl: widgetData.photo_url !== undefined ? sanitizePhotoUrl(widgetData.photo_url) : undefined,
+      isRealTelegram: true,
+      clearMissingPhoto: true,
       referralCode,
     });
 
